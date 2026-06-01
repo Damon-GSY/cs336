@@ -48,6 +48,13 @@ def find_chunk_boundaries(
     # Make sure all boundaries are unique, but might be fewer than desired_num_chunks
     return sorted(set(chunk_boundaries))
 
+def pre_tokenization(chunk, ):
+    bytes2freq = {}
+    for b in chunk.encode("utf-8"):
+        # GPT2 style pre_tokenization
+        # store a tuple of bytes and its frequence in to the dict
+
+    # return the dict
 
 ## Usage
 with open(..., "rb") as f:
@@ -56,7 +63,11 @@ with open(..., "rb") as f:
 
     # The following is a serial implementation, but you can parallelize this
     # by sending each start/end pair to a set of processes.
+    word2freq = {}
     for start, end in zip(boundaries[:-1], boundaries[1:]):
         f.seek(start)
         chunk = f.read(end - start).decode("utf-8", errors="ignore")
         # Run pre-tokenization on your chunk and store the counts for each pre-token
+        bytes2freq = pre_tokenization(chunk) 
+        for key, value in word2freq.items():
+            word2freq[key] = word2freq.get(key, 0) + value
