@@ -1,6 +1,10 @@
 import os
 from typing import BinaryIO
 
+import regex as re
+
+PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+
 
 def find_chunk_boundaries(
     file: BinaryIO,
@@ -11,7 +15,9 @@ def find_chunk_boundaries(
     Chunk the file into parts that can be counted independently.
     May return fewer chunks if the boundaries end up overlapping.
     """
-    assert isinstance(split_special_token, bytes), "Must represent special token as a bytestring"
+    assert isinstance(split_special_token, bytes), (
+        "Must represent special token as a bytestring"
+    )
 
     # Get total file size in bytes
     file.seek(0, os.SEEK_END)
@@ -48,26 +54,37 @@ def find_chunk_boundaries(
     # Make sure all boundaries are unique, but might be fewer than desired_num_chunks
     return sorted(set(chunk_boundaries))
 
-def pre_tokenization(chunk, ):
-    bytes2freq = {}
-    for b in chunk.encode("utf-8"):
-        # GPT2 style pre_tokenization
-        # store a tuple of bytes and its frequence in to the dict
 
-    # return the dict
+def pre_tokenization(chunk: str, special_tokens: list[str]) -> dict[tuple[bytes, ...], int]:
+    bytes2freq: dict[tuple[bytes, ...], int] = {}
+
+    # split out special tokens — they must not participate in BPE merges
+    pattern = "|".join(re.escape(tok) for tok in special_tokens)
+    segments = re.split(pattern, chunk) if pattern else [chunk]
+
+    for seg in segments:
+        for match in re.finditer(PAT, seg):
+            word_bytes = match.group().encode("utf-8")
+            key = tuple(bytes([b]) for b in word_bytes)
+            bytes2freq[key] = bytes2freq.get(key, 0) + 1
+
+    return bytes2freq
+
 
 ## Usage
-with open(..., "rb") as f:
-    num_processes = 4
-    boundaries = find_chunk_boundaries(f, num_processes, b"<|endoftext|>")
+if __name__ == "__main__":
+    special_tokens = ["<|endoftext|>"]
+    word_counts: dict[tuple[bytes, ...], int] = {}
 
-    # The following is a serial implementation, but you can parallelize this
-    # by sending each start/end pair to a set of processes.
-    word2freq = {}
-    for start, end in zip(boundaries[:-1], boundaries[1:]):
-        f.seek(start)
-        chunk = f.read(end - start).decode("utf-8", errors="ignore")
-        # Run pre-tokenization on your chunk and store the counts for each pre-token
-        bytes2freq = pre_tokenization(chunk) 
-        for key, value in word2freq.items():
-            word2freq[key] = word2freq.get(key, 0) + value
+    with open(..., "rb") as f:
+        num_processes = 4
+        boundaries = find_chunk_boundaries(f, num_processes, b"<|endoftext|>")
+
+        # The following is a serial implementation, but you can parallelize this
+        # by sending each start/end pair to a set of processes.
+        for start, end in zip(boundaries[:-1], boundaries[1:]):
+            f.seek(start)
+            chunk = f.read(end - start).decode("utf-8", errors="ignore")
+            local = pre_tokenization(chunk, special_tokens)
+            for key, cnt in local.items():
+                word_counts[key] = word_counts.get(key, 0) + cnt
