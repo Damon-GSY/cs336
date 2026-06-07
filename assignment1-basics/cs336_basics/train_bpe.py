@@ -15,28 +15,6 @@ import regex as re
 
 from pretokenization_example import find_chunk_boundaries, pre_tokenization
 
-
-def count_pairs(
-    word_counts: dict[tuple[bytes, ...], int],
-) -> dict[tuple[bytes, bytes], int]:
-    """
-    Count adjacent byte-pair frequencies across all words, weighted by word count.
-
-    Input:
-        word_counts: {(b'l', b'o', b'w'): 5, ...}
-    Output:
-        pair_counts: {(b'l', b'o'): 5, (b'o', b'w'): 5, ...}
-    """
-    pair_counts: dict[tuple[bytes, bytes], int] = {}
-
-    for word, count in word_counts.items():
-        for i in range(len(word) - 1):
-            pair = (word[i], word[i + 1])
-            pair_counts[pair] = pair_counts.get(pair, 0) + count
-
-    return pair_counts
-
-
 def apply_merge_naive(
     word_counts: dict[tuple[bytes, ...], int],
     pair: tuple[bytes, bytes],
