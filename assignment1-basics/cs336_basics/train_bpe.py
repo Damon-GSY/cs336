@@ -9,11 +9,8 @@ from __future__ import annotations
 
 import os
 from collections import Counter
-from typing import BinaryIO
 
-import regex as re
-
-from pretokenization_example import find_chunk_boundaries, pre_tokenization
+from .pretokenization_example import find_chunk_boundaries, pre_tokenization
 
 def apply_merge_naive(
     word_counts: dict[tuple[bytes, ...], int],
